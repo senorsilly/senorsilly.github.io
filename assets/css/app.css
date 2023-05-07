@@ -1,0 +1,21 @@
+﻿.sticky {
+    top: 5px;
+    position: sticky;
+}
+
+body {
+    font-size: 1.5em;
+}
+
+#AddRow, #AddServiceRow, .removeRow, .removeServiceRow {
+    font-size: 1.5em;
+    border-radius: 50%;
+    line-height: 1.5em;
+    width: 70px;
+    font-weight: bold;
+}
+
+#SubTotal, #GrandTotal {
+    text-shadow: 1px 1px 0 #444;
+    font-size: 1.5em;
+}
