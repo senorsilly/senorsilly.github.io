@@ -17,5 +17,14 @@ body {
 
 #SubTotal, #GrandTotal {
     text-shadow: 1px 1px 0 #444;
-    font-size: 1.0em;
+    font-size: 1.5em;
+}
+
+body {
+    background-image: url('../img/logo.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position-x: center;
+    background-position-y: center;
+    background-size: contain;
 }
