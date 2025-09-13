@@ -1,6 +1,6 @@
 {
-  "short_name": "Invoice Builder",
-  "name": "Invoice Builder",
+  "short_name": "Medication Tracker",
+  "name": "Medication Tracker",
   "icons": [
     {
       "src": "assets/img/logo.svg",
@@ -19,10 +19,10 @@
     }
   ],
   "id": "",
-  "start_url": "https://senorsilly.github.io/InvoiceBuilder/index.html",
-  "background_color": "#9c27b0",
+  "start_url": "https://senorsilly.github.io/MedicationTracker/index.html",
+  "background_color": "#2739b0",
   "display": "standalone",
   "scope": "/",
   "theme_color": "#3367D6",
-  "description": "Used to generate an invoice total from a list of services"
+  "description": "Used to track medications"
 }
