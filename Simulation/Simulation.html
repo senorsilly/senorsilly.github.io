@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiverse Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a1a;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: rgba(17, 24, 39, 0.7);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(75, 85, 99, 0.5);
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+        }
+        button, input[type="range"] {
+            cursor: pointer;
+            border-radius: 0.5rem;
+        }
+        #stats-display p, #universe-details p, #speed-control p, .toggle-container {
+            margin: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: rgba(75, 85, 99, 0.5);
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #60a5fa;
+            border-radius: 50%;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div style="display: none;" id="loading-overlay">Generating universe names...</div>
+    <div id="canvas-container" class="w-full h-full absolute top-0 left-0 z-0"></div>
+    <div id="ui-container" class="z-10">
+        <!-- Control Buttons -->
+        <div class="flex flex-col sm:flex-row gap-2">
+            <button id="pause-btn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                Pause
+            </button>
+            <button id="reset-btn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                Reset
+            </button>
+        </div>
+
+        <!-- Speed Control Slider -->
+        <div id="speed-control" class="flex flex-col">
+            <label for="speed-slider" class="text-sm font-semibold mb-1">Simulation Speed: <span id="speed-label">1.0</span>x</label>
+            <input type="range" id="speed-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- Auto-Zoom Toggle -->
+        <div class="toggle-container">
+            <input type="checkbox" id="auto-zoom-toggle">
+            <label for="auto-zoom-toggle" class="text-sm">Auto-Zoom</label>
+        </div>
+
+        <!-- Show Names Toggle -->
+        <div class="toggle-container">
+            <input type="checkbox" id="show-names-toggle">
+            <label for="show-names-toggle" class="text-sm">Show Names</label>
+        </div>
+
+        <!-- Timeline Controls -->
+        <div id="timeline-controls" class="flex flex-col gap-2">
+            <h3 class="text-md font-bold text-white">Timeline Controls</h3>
+            <div class="flex flex-col">
+                <label for="snapshot-interval-slider" class="text-sm font-semibold mb-1">Snapshot Interval: <span id="snapshot-interval-label">100</span> frames</label>
+                <input type="range" id="snapshot-interval-slider" min="10" max="500" step="10" value="100">
+            </div>
+            <div class="flex flex-row gap-2">
+                <button id="rewind-btn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                    Rewind
+                </button>
+                <button id="fast-forward-btn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                    Fast-Forward
+                </button>
+            </div>
+        </div>
+
+        <!-- Simulation Stats -->
+        <div id="stats-display" class="bg-gray-700 p-4 rounded-lg shadow-inner">
+            <p>Total Universes: 0</p>
+            <p>Total Stars: 0</p>
+        </div>
+
+        <!-- Universe Details Panel -->
+        <div id="universe-details" class="bg-gray-700 p-4 rounded-lg shadow-inner">
+            <!-- Details will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Three.js and OrbitControls Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Script for the simulation logic -->
+    <script>
+        // --- Global Variables ---
+        let scene, camera, renderer, controls;
+        let isPaused = false;
+        let universes = [];
+        let universeGroup;
+        const depth = 3;
+        const maxUniverses = 1000;
+
+        // Raycasting for user interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let selectedUniverse = null;
+
+        // Simulation parameters
+        let universeExpansionRate = 0.001;
+        let starFormationRate = 0.0001;
+        let planetFormationChance = 0.01;
+        let lifeFormationChance = 0.001;
+        let interPlanetaryTravelChance = 0.0005;
+        let simulationSpeed = 1.0;
+        let initialCameraDistance;
+        let isAutoZoomEnabled = false;
+        let showNames = false;
+
+        // Timeline variables
+        let timeline;
+        let snapshotInterval = 100;
+
+        // Generated names
+        let starNames = [];
+        let planetNames = [];
+
+        // Traveling objects for visualization
+        let travelingObjects = [];
+        const travelingSpeed = 0.05;
+
+        // --- Data Structures ---
+        class Universe {
+            constructor(id, threeMesh, initialRadius) {
+                this.id = id;
+                this.threeMesh = threeMesh;
+                this.initialRadius = initialRadius;
+                this.currentRadius = initialRadius;
+                this.age = 0;
+                this.physicalConstants = {
+                    gravity: Math.random() * 0.5 + 0.5,
+                    hydrogenDensity: 0
+                };
+                this.stars = [];
+            }
+        }
+
+        class CelestialObject {
+            constructor(id, type, position, threeMesh, mass) {
+                this.id = id;
+                this.type = type;
+                this.name = null;
+                this.state = 'forming';
+                this.position = position;
+                this.threeMesh = threeMesh;
+                this.mass = mass;
+                this.age = 0;
+                this.composition = {
+                    hydrogen: 0.75,
+                    helium: 0.25,
+                };
+                this.planets = [];
+                this.nameLabel = null;
+            }
+        }
+
+        class Planet {
+            constructor(id, position, threeMesh, mass) {
+                this.id = id;
+                this.name = null;
+                this.position = position;
+                this.threeMesh = threeMesh;
+                this.mass = mass;
+                this.age = 0;
+                this.composition = {
+                    rock: Math.random(),
+                    metal: Math.random(),
+                    gas: Math.random()
+                };
+                let total = this.composition.rock + this.composition.metal + this.composition.gas;
+                this.composition.rock /= total;
+                this.composition.metal /= total;
+                this.composition.gas /= total;
+                this.lifeForms = [];
+                this.technology = null;
+                this.nameLabel = null;
+            }
+        }
+
+        class Technology {
+            constructor(id, parentMesh) {
+                this.id = id;
+                this.parentMesh = parentMesh;
+                this.threeMesh = new THREE.Group();
+                this.level = 0;
+                this.parentMesh.add(this.threeMesh);
+            }
+
+            update(level) {
+                this.level = level;
+                this.threeMesh.children.forEach(child => {
+                    child.geometry.dispose();
+                    child.material.dispose();
+                });
+                this.threeMesh.children = [];
+
+                if (level > 0) {
+                    const numCubes = Math.floor(level / 10);
+                    const cubeSize = 0.005;
+                    const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+                    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+                    for (let i = 0; i < numCubes; i++) {
+                        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                        const radius = this.parentMesh.geometry.parameters.radius * 0.8;
+                        const angle = Math.random() * Math.PI * 2;
+                        cube.position.set(
+                            Math.cos(angle) * radius,
+                            (Math.random() - 0.5) * cubeSize * 2,
+                            Math.sin(angle) * radius
+                        );
+                        this.threeMesh.add(cube);
+                    }
+                }
+            }
+
+            remove() {
+                 this.parentMesh.remove(this.threeMesh);
+                 this.threeMesh.children.forEach(child => {
+                    child.geometry.dispose();
+                    child.material.dispose();
+                 });
+            }
+        }
+
+        class LifeForm {
+            constructor(id, type, locationId) {
+                this.id = id;
+                this.type = type;
+                this.location = locationId;
+                this.awareness = 0;
+                this.technologyLevel = 0;
+            }
+
+            progress(planet, simulationSpeed) {
+                // Progression based on type and awareness
+                this.awareness += 0.01 * simulationSpeed;
+
+                if (this.type === 'microbial' && this.awareness > 50) {
+                    this.type = 'plant';
+                    timeline.addEvent('lifeEvolution', { lifeId: this.id, newType: 'plant' });
+                } else if (this.type === 'plant' && this.awareness > 100) {
+                    this.type = 'animal';
+                    timeline.addEvent('lifeEvolution', { lifeId: this.id, newType: 'animal' });
+                } else if (this.type === 'animal' && this.awareness > 200) {
+                    this.type = 'sentient';
+                    timeline.addEvent('lifeEvolution', { lifeId: this.id, newType: 'sentient' });
+                }
+
+                // Technology only develops for sentient life
+                if (this.type === 'sentient') {
+                    this.technologyLevel += 0.05 * simulationSpeed;
+                    if (!planet.technology) {
+                         planet.technology = new Technology('tech-0', planet.threeMesh);
+                    }
+                    planet.technology.update(this.technologyLevel);
+                }
+            }
+        }
+
+        class TravelingObject {
+            constructor(startPosition, endPosition, startParent, endParent, lifeData) {
+                this.startPosition = startPosition.clone();
+                this.endPosition = endPosition.clone();
+                this.startParent = startParent;
+                this.endParent = endParent;
+                this.lifeData = lifeData;
+                this.progress = 0;
+                this.isComplete = false;
+                
+                const geometry = new THREE.ConeGeometry(0.01, 0.03, 8);
+                const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                this.threeMesh = new THREE.Mesh(geometry, material);
+                this.threeMesh.position.copy(startPosition);
+                this.threeMesh.lookAt(endPosition); // Point the cone towards the destination
+                universeGroup.add(this.threeMesh);
+            }
+
+            update() {
+                this.progress += travelingSpeed * simulationSpeed;
+                if (this.progress >= 1) {
+                    this.progress = 1;
+                    this.isComplete = true;
+                    this.threeMesh.geometry.dispose();
+                    this.threeMesh.material.dispose();
+                    universeGroup.remove(this.threeMesh);
+                }
+
+                const currentPosition = new THREE.Vector3().lerpVectors(this.startPosition, this.endPosition, this.progress);
+                this.threeMesh.position.copy(currentPosition);
+            }
+        }
+
+        class TimelineEvent {
+            constructor(timestamp, type, data) {
+                this.timestamp = timestamp;
+                this.type = type;
+                this.data = data;
+            }
+        }
+
+        class StateSnapshot {
+            constructor(timestamp, universesData) {
+                this.timestamp = timestamp;
+                this.universesData = universesData;
+            }
+        }
+
+        class Timeline {
+            constructor() {
+                this.currentTimestamp = 0;
+                this.events = [];
+                this.stateSnapshots = [];
+                this.snapshotIndex = -1;
+            }
+
+            addEvent(type, data) {
+                this.events.push(new TimelineEvent(this.currentTimestamp, type, data));
+            }
+
+            saveSnapshot() {
+                if (this.snapshotIndex > -1 && this.snapshotIndex < this.stateSnapshots.length - 1) {
+                    this.stateSnapshots = this.stateSnapshots.slice(0, this.snapshotIndex + 1);
+                }
+
+                const universesData = JSON.parse(JSON.stringify(universes.map(u => ({
+                    id: u.id,
+                    age: u.age,
+                    initialRadius: u.initialRadius,
+                    currentRadius: u.currentRadius,
+                    physicalConstants: u.physicalConstants,
+                    stars: u.stars.map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        type: s.type,
+                        state: s.state,
+                        position: s.position,
+                        mass: s.mass,
+                        age: s.age,
+                        composition: s.composition,
+                        planets: s.planets.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            position: p.position,
+                            mass: p.mass,
+                            age: p.age,
+                            composition: p.composition,
+                            hasLife: p.lifeForms.length > 0,
+                            lifeForms: p.lifeForms,
+                            technologyLevel: p.technology ? p.technology.level : 0
+                        }))
+                    }))
+                }))));
+
+                this.stateSnapshots.push(new StateSnapshot(this.currentTimestamp, universesData));
+                this.snapshotIndex = this.stateSnapshots.length - 1;
+            }
+        }
+        
+        // --- Name Label Functions ---
+        function createTextTexture(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const font = "48px Inter, sans-serif";
+            context.font = font;
+            const textMetrics = context.measureText(text);
+            const textWidth = textMetrics.width;
+            const textHeight = 48; // A reasonable height for the font size
+
+            // Resize canvas to fit the text
+            canvas.width = textWidth + 10;
+            canvas.height = textHeight + 10;
+            context.font = font;
+            context.fillStyle = 'white';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        function addNameLabel(object, name) {
+            /* if (object.nameLabel) return;
+
+            const textTexture = createTextTexture(name);
+            const material = new THREE.SpriteMaterial({ map: textTexture, sizeAttenuation: false });
+            const sprite = new THREE.Sprite(material);
+
+            const scaleFactor = 0.005;
+            sprite.scale.set(textTexture.image.width * scaleFactor, textTexture.image.height * scaleFactor, 1);
+            sprite.position.y = 0.2; // Position it slightly above the object
+
+            object.threeMesh.add(sprite);
+            object.nameLabel = sprite; */
+        }
+
+        function toggleNames(show) {
+            universes.forEach(universe => {
+                universe.stars.forEach(star => {
+                    if (star.nameLabel) {
+                        star.nameLabel.visible = show;
+                    }
+                    star.planets.forEach(planet => {
+                        if (planet.nameLabel) {
+                            planet.nameLabel.visible = show;
+                        }
+                    });
+                });
+            });
+        }
+        
+        // --- LLM API Call for Names ---
+        async function generateNames() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            const prompt = "Generate a list of 50 unique, imaginative, and creative names for stars and 50 names for planets, separated by a specific JSON key. The star names should sound like constellations or mythical places. The planet names should sound like alien worlds or futuristic colonies. Provide the response as a JSON object with two keys: 'stars' and 'planets', each containing an array of strings.";
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "stars": {
+                                "type": "ARRAY",
+                                "items": { "type": "STRING" }
+                            },
+                            "planets": {
+                                "type": "ARRAY",
+                                "items": { "type": "STRING" }
+                            }
+                        }
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                const parsedJson = JSON.parse(jsonText);
+                starNames = parsedJson.stars;
+                planetNames = parsedJson.planets;
+                console.log("Names generated successfully:", parsedJson);
+            } catch (error) {
+                console.error("Error generating names:", error);
+                // Fallback names if API fails
+                starNames = ["Solara", "Aethel", "Xylos", "Vega", "Sirius", "Proxima"];
+                planetNames = ["Aethelgard", "Celestia", "Kaeloria", "Zendikar", "Elysium", "Xylos Prime"];
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+        
+        // --- Initialization Function ---
+        async function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a1a);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 10;
+            initialCameraDistance = camera.position.length();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            const canvasContainer = document.getElementById('canvas-container');
+            canvasContainer.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            universeGroup = new THREE.Group();
+            scene.add(universeGroup);
+            
+            //await generateNames();
+
+            timeline = new Timeline();
+
+            generateSphereFlake(new THREE.Vector3(0, 0, 0), 1, depth);
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('pause-btn').addEventListener('click', () => {
+                isPaused = !isPaused;
+                document.getElementById('pause-btn').textContent = isPaused ? 'Resume' : 'Pause';
+            });
+            document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+            renderer.domElement.addEventListener('click', onMouseDown, false);
+            
+            const speedSlider = document.getElementById('speed-slider');
+            const speedLabel = document.getElementById('speed-label');
+            speedSlider.addEventListener('input', (event) => {
+                simulationSpeed = parseFloat(event.target.value);
+                speedLabel.textContent = simulationSpeed.toFixed(1);
+            });
+
+            document.getElementById('auto-zoom-toggle').addEventListener('change', (event) => {
+                isAutoZoomEnabled = event.target.checked;
+            });
+
+            document.getElementById('show-names-toggle').addEventListener('change', (event) => {
+                showNames = event.target.checked;
+                toggleNames(showNames);
+            });
+
+            const snapshotIntervalSlider = document.getElementById('snapshot-interval-slider');
+            const snapshotIntervalLabel = document.getElementById('snapshot-interval-label');
+            snapshotIntervalSlider.addEventListener('input', (event) => {
+                snapshotInterval = parseInt(event.target.value, 10);
+                snapshotIntervalLabel.textContent = snapshotInterval;
+            });
+
+            document.getElementById('rewind-btn').addEventListener('click', rewindSimulation);
+            document.getElementById('fast-forward-btn').addEventListener('click', fastForwardSimulation);
+
+            animate();
+        }
+
+        // --- Sphere Flake Generation Function ---
+        function generateSphereFlake(position, radius, currentDepth) {
+            if (currentDepth <= 0 || universes.length > maxUniverses) {
+                return;
+            }
+
+            const geometry = new THREE.SphereGeometry(radius, 32, 32);
+            const material = new THREE.MeshLambertMaterial({ color: 0x8888ff, transparent: true, opacity: 0.8 });
+            const universeMesh = new THREE.Mesh(geometry, material);
+            universeMesh.position.copy(position);
+            universeGroup.add(universeMesh);
+
+            const universeData = new Universe(universes.length, universeMesh, radius);
+            universes.push(universeData);
+
+            const newRadius = radius / 3;
+            const newPositions = [];
+
+            newPositions.push(
+                new THREE.Vector3(position.x + radius + newRadius, position.y, position.z),
+                new THREE.Vector3(position.x - radius - newRadius, position.y, position.z),
+                new THREE.Vector3(position.x, position.y + radius + newRadius, position.z),
+                new THREE.Vector3(position.x, position.y - radius - newRadius, position.z),
+                new THREE.Vector3(position.x, position.y, position.z + radius + newRadius),
+                new THREE.Vector3(position.x, position.y, position.z - radius - newRadius)
+            );
+
+            newPositions.forEach(newPos => {
+                generateSphereFlake(newPos, newRadius, currentDepth - 1);
+            });
+        }
+
+        // --- Main Simulation Update Logic ---
+        function simulationUpdate() {
+            let totalStars = 0;
+            let totalPlanets = 0;
+            let totalLifeForms = 0;
+            
+            timeline.currentTimestamp += simulationSpeed;
+
+            if (Math.floor(timeline.currentTimestamp) % snapshotInterval === 0) {
+                timeline.saveSnapshot();
+            }
+
+            const scale = 1 + (universes[0].age * universeExpansionRate * simulationSpeed);
+            universeGroup.scale.setScalar(scale);
+
+            if (isAutoZoomEnabled) {
+                 camera.position.setLength(initialCameraDistance * scale);
+            }
+
+            // Update traveling objects
+            travelingObjects.forEach(obj => obj.update());
+            travelingObjects = travelingObjects.filter(obj => {
+                if (obj.isComplete) {
+                    if(universes.find(u => u.id === obj.endParent.universeId).stars){
+                        /* const destinationPlanet = universes.find(u => u.id === obj.endParent.universeId).stars.find(s => s.id === obj.endParent.starId).planets.find(p => p.id === obj.endParent.planetId);
+                        const nextLifeId = destinationPlanet.lifeForms.length > 0 ? Math.max(...destinationPlanet.lifeForms.map(l => l.id)) + 1 : 0;
+                        const newLife = new LifeForm(nextLifeId, 'microbial', destinationPlanet.id);
+                        destinationPlanet.lifeForms.push(newLife);
+                        timeline.addEvent('colonization', {
+                            originPlanetId: obj.lifeData.location,
+                            destinationPlanetId: destinationPlanet.id
+                        });
+                        destinationPlanet.threeMesh.material.color.setHex(0x00ff00); */
+                    }
+                    return false;
+                }
+                return true;
+            });
+
+            universes.forEach(universe => {
+                universe.age += simulationSpeed;
+                universe.physicalConstants.hydrogenDensity = Math.min(1.0, universe.age / 1000);
+
+                const formationChance = (starFormationRate * simulationSpeed) * universe.physicalConstants.hydrogenDensity * universe.physicalConstants.gravity;
+                
+                if (Math.random() < formationChance) {
+                    const starMass = Math.random() * 2 + 0.1;
+                    const starGeometry = new THREE.SphereGeometry(0.05 * starMass, 16, 16);
+                    const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                    const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+
+                    const starPosition = new THREE.Vector3(
+                        (Math.random() - 0.5) * universe.threeMesh.geometry.parameters.radius * 2,
+                        (Math.random() - 0.5) * universe.threeMesh.geometry.parameters.radius * 2,
+                        (Math.random() - 0.5) * universe.threeMesh.geometry.parameters.radius * 2
+                    );
+
+                    starMesh.position.copy(starPosition);
+                    universe.threeMesh.add(starMesh);
+
+                    const newStar = new CelestialObject(universe.stars.length, 'star', starPosition, starMesh, starMass);
+                    newStar.name = starNames[Math.floor(Math.random() * starNames.length)];
+                    addNameLabel(newStar, newStar.name);
+                    universe.stars.push(newStar);
+                    
+                    timeline.addEvent('starFormation', { universeId: universe.id, position: starPosition.toArray() });
+                }
+
+                universe.stars.forEach(star => {
+                    star.age += simulationSpeed;
+
+                    if (star.age > 1000 && star.state === 'forming') {
+                        star.state = 'mainSequence';
+                        star.threeMesh.material.color.setHex(0xffaa55);
+                    }
+                    if (star.age > 5000 && star.state === 'mainSequence') {
+                        star.state = 'supernova';
+                        star.threeMesh.material.color.setHex(0xff0000);
+                    }
+                    if (star.age > 5100 && star.state === 'supernova') {
+                         star.state = 'dead';
+                         star.threeMesh.material.color.setHex(0xaaaaaa);
+                    }
+
+                    if (star.state === 'mainSequence' && Math.random() < planetFormationChance * simulationSpeed) {
+                        const existingPlanetIds = star.planets.map(p => p.id);
+                        const nextPlanetId = existingPlanetIds.length > 0 ? Math.max(...existingPlanetIds) + 1 : 0;
+                        
+                        const planetDistance = Math.random() * (star.threeMesh.geometry.parameters.radius * 1.5) + (star.threeMesh.geometry.parameters.radius + 0.1);
+                        const angle = Math.random() * Math.PI * 2;
+                        const planetPosition = new THREE.Vector3(
+                            Math.cos(angle) * planetDistance,
+                            0,
+                            Math.sin(angle) * planetDistance
+                        );
+
+                        const planetMass = Math.random() * 0.1 + 0.01;
+                        const planetGeometry = new THREE.SphereGeometry(0.02 * planetMass * 10, 16, 16);
+                        const planetMaterial = new THREE.MeshBasicMaterial({ color: 0x55aaee });
+                        const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+                        planetMesh.position.copy(planetPosition);
+
+                        star.threeMesh.add(planetMesh);
+                        const newPlanet = new Planet(nextPlanetId, planetPosition, planetMesh, planetMass);
+                        newPlanet.name = planetNames[Math.floor(Math.random() * planetNames.length)];
+                        addNameLabel(newPlanet, newPlanet.name);
+                        star.planets.push(newPlanet);
+
+                        timeline.addEvent('planetFormation', { starId: star.id, planetId: newPlanet.id });
+                    }
+
+                    star.planets.forEach(planet => {
+                        planet.age += simulationSpeed;
+                        planet.threeMesh.rotation.y += 0.01 * simulationSpeed;
+
+                        if (planet.lifeForms.length > 0) {
+                            planet.threeMesh.material.color.setHex(0x00ff00);
+                        }
+
+                        if (planet.age > 1000 && planet.lifeForms.length === 0 && Math.random() < lifeFormationChance * simulationSpeed) {
+                             const lifeId = 0;
+                             const newLife = new LifeForm(lifeId, 'microbial', planet.id);
+                             planet.lifeForms.push(newLife);
+                             timeline.addEvent('lifeFormation', { planetId: planet.id, lifeId: newLife.id, type: newLife.type });
+                        }
+
+                        planet.lifeForms.forEach(lifeForm => {
+                            lifeForm.progress(planet, simulationSpeed);
+
+                            if (lifeForm.type === 'sentient' && lifeForm.technologyLevel > 50 && Math.random() < interPlanetaryTravelChance) {
+                                let validTargetPlanet = null;
+                                const thisUniverseIndex = universe.id;
+                                const maxDistance = 10;
+                                const maxAttempts = 10;
+                                const thisPlanet = planet;
+
+                                for (let i = 0; i < maxAttempts; i++) {
+                                    const targetUniverseIndex = Math.floor(Math.random() * universes.length);
+                                    if (targetUniverseIndex === thisUniverseIndex) continue;
+
+                                    const targetUniverse = universes[targetUniverseIndex];
+                                    const distance = universe.threeMesh.position.distanceTo(targetUniverse.threeMesh.position);
+                                    if (distance < maxDistance && targetUniverse.stars.length > 0) {
+                                         const randomStar = targetUniverse.stars[Math.floor(Math.random() * targetUniverse.stars.length)];
+                                         if (randomStar.planets.length > 0) {
+                                             const randomPlanet = randomStar.planets[Math.floor(Math.random() * randomStar.planets.length)];
+                                             if (randomPlanet.lifeForms.length === 0) {
+                                                  validTargetPlanet = randomPlanet;
+                                                  break;
+                                             }
+                                         }
+                                    }
+                                }
+
+                                if (validTargetPlanet) {
+                                    const startPos = new THREE.Vector3().copy(thisPlanet.threeMesh.getWorldPosition(new THREE.Vector3()));
+                                    const endPos = new THREE.Vector3().copy(validTargetPlanet.threeMesh.getWorldPosition(new THREE.Vector3()));
+                                    const travelingObj = new TravelingObject(
+                                        startPos,
+                                        endPos,
+                                        {universeId: universe.id, starId: star.id, planetId: thisPlanet.id},
+                                        {universeId: validTargetPlanet.id, starId: validTargetPlanet.id, planetId: validTargetPlanet.id},
+                                        lifeForm
+                                    );
+                                    travelingObjects.push(travelingObj);
+                                }
+                            }
+                        });
+
+                        totalLifeForms += planet.lifeForms.length;
+                    });
+
+                    totalPlanets += star.planets.length;
+                });
+
+                totalStars += universe.stars.length;
+            });
+
+            document.getElementById('stats-display').innerHTML = `
+                <p>Total Universes: ${universes.length}</p>
+                <p>Total Stars: ${totalStars}</p>
+                <p>Total Planets: ${totalPlanets}</p>
+                <p>Total Life Forms: ${totalLifeForms}</p>
+                <p>Current Time: ${timeline.currentTimestamp.toFixed(0)}</p>
+            `;
+
+            if (selectedUniverse) {
+                renderUniverseDetails(selectedUniverse);
+            }
+        }
+
+        // --- User Interaction with Raycasting ---
+        function onMouseDown(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(universeGroup.children, true);
+
+            if (intersects.length > 0) {
+                const clickedMesh = intersects[0].object;
+                
+                selectedUniverse = universes.find(u => 
+                    u.threeMesh === clickedMesh || 
+                    u.stars.some(s => s.threeMesh === clickedMesh || s.planets.some(p => p.threeMesh === clickedMesh))
+                );
+
+                if (selectedUniverse) {
+                    renderUniverseDetails(selectedUniverse);
+                }
+            } else {
+                selectedUniverse = null;
+                document.getElementById('universe-details').innerHTML = '';
+            }
+        }
+
+        function renderUniverseDetails(selectedUniverse){
+            const showNames = document.getElementById('show-names-toggle').checked;
+            let starDetailsHtml = '';
+            selectedUniverse.stars.forEach(star => {
+                let planetDetailsHtml = '';
+                star.planets.forEach(planet => {
+                    let lifeFormsHtml = '';
+                    planet.lifeForms.forEach(life => {
+                        lifeFormsHtml += `
+                            <p class="pl-8 text-xs"><strong>Life ID:</strong> ${life.id}</p>
+                            <p class="pl-8 text-xs"><strong>Type:</strong> ${life.type}</p>
+                            <p class="pl-8 text-xs"><strong>Awareness:</strong> ${life.awareness.toFixed(2)}</p>
+                            <p class="pl-8 text-xs"><strong>Tech Level:</strong> ${life.technologyLevel.toFixed(2)}</p>
+                        `;
+                    });
+
+                    const planetName = showNames ? ` (${planet.name})` : '';
+                    planetDetailsHtml += `
+                        <p class="pl-4 text-sm"><strong>Planet ID:</strong> ${planet.id}${planetName}</p>
+                        <p class="pl-4 text-sm"><strong>Mass:</strong> ${planet.mass.toFixed(2)}</p>
+                        <p class="pl-4 text-sm"><strong>Age:</strong> ${planet.age.toFixed(0)}</p>
+                        <p class="pl-4 text-sm"><strong>Composition:</strong> R:${(planet.composition.rock * 100).toFixed(0)}%, M:${(planet.composition.metal * 100).toFixed(0)}%, G:${(planet.composition.gas * 100).toFixed(0)}%</p>
+                        <div class="mt-1 mb-2">${lifeFormsHtml}</div>
+                    `;
+                });
+
+                const starName = showNames ? ` (${star.name})` : '';
+                starDetailsHtml += `
+                    <p><strong>Star ID:</strong> ${star.id}${starName}</p>
+                    <p><strong>Type:</strong> ${star.type}</p>
+                    <p><strong>State:</strong> ${star.state}</p>
+                    <p><strong>Mass:</strong> ${star.mass.toFixed(2)}</p>
+                    <p><strong>Age:</strong> ${star.age.toFixed(0)}</p>
+                    <p><strong>Composition:</strong> H:${(star.composition.hydrogen * 100).toFixed(0)}%, He:${(star.composition.helium * 100).toFixed(0)}%</p>
+                    <div class="mt-2 mb-2">${planetDetailsHtml}</div>
+                    <hr class="my-2 border-gray-600">
+                `;
+            });
+
+            document.getElementById('universe-details').innerHTML = `
+                        <h2>Universe Details</h2>
+                        <p><strong>ID:</strong> ${selectedUniverse.id}</p>
+                        <p><strong>Age:</strong> ${selectedUniverse.age.toFixed(0)} frames</p>
+                        <p><strong>Current Radius:</strong> ${(selectedUniverse.initialRadius * universeGroup.scale.x).toFixed(2)}</p>
+                        <p><strong>Gravity:</strong> ${selectedUniverse.physicalConstants.gravity.toFixed(2)}</p>
+                        <p><strong>Hydrogen Density:</strong> ${selectedUniverse.physicalConstants.hydrogenDensity.toFixed(2)}</p>
+                        <p><strong>Number of Stars:</strong> ${selectedUniverse.stars.length}</p>
+                        <div class="mt-4">
+                            <h3 class="font-bold">Stars & Planets:</h3>
+                            ${starDetailsHtml}
+                        </div>
+                    `;
+        }
+
+        // --- Timeline Navigation Functions ---
+        function rewindSimulation() {
+            if (timeline.snapshotIndex > 0) {
+                isPaused = true;
+                timeline.snapshotIndex--;
+                const snapshot = timeline.stateSnapshots[timeline.snapshotIndex];
+                restoreSimulationState(snapshot);
+            } else {
+                console.log("No earlier snapshots available.");
+            }
+        }
+
+        function fastForwardSimulation() {
+            if (timeline.snapshotIndex < timeline.stateSnapshots.length - 1) {
+                isPaused = true;
+                timeline.snapshotIndex++;
+                const snapshot = timeline.stateSnapshots[timeline.snapshotIndex];
+                restoreSimulationState(snapshot);
+            } else {
+                console.log("At the end of the timeline. Resuming live simulation.");
+                isPaused = false;
+                document.getElementById('pause-btn').textContent = 'Pause';
+            }
+        }
+
+        function restoreSimulationState(snapshot) {
+            timeline.currentTimestamp = snapshot.timestamp;
+
+            universes.forEach(universe => {
+                universe.stars.forEach(star => {
+                    star.planets.forEach(planet => {
+                        planet.lifeForms.forEach(life => {
+                             if (planet.technology) planet.technology.remove();
+                        });
+                        if (planet.nameLabel) {
+                            planet.threeMesh.remove(planet.nameLabel);
+                            planet.nameLabel.material.map.dispose();
+                            planet.nameLabel.material.dispose();
+                        }
+                        star.threeMesh.remove(planet.threeMesh);
+                        planet.threeMesh.geometry.dispose();
+                        planet.threeMesh.material.dispose();
+                    });
+                    if (star.nameLabel) {
+                        star.threeMesh.remove(star.nameLabel);
+                        star.nameLabel.material.map.dispose();
+                        star.nameLabel.material.dispose();
+                    }
+                    universe.threeMesh.remove(star.threeMesh);
+                    star.threeMesh.geometry.dispose();
+                    star.threeMesh.material.dispose();
+                });
+                universe.stars = [];
+            });
+            travelingObjects.forEach(obj => {
+                 obj.threeMesh.geometry.dispose();
+                 obj.threeMesh.material.dispose();
+                 universeGroup.remove(obj.threeMesh);
+            });
+            travelingObjects = [];
+
+            snapshot.universesData.forEach(snapshotData => {
+                const universe = universes[snapshotData.id];
+                if (universe) {
+                    universe.age = snapshotData.age;
+                    universe.physicalConstants = snapshotData.physicalConstants;
+                    
+                    snapshotData.stars.forEach(starData => {
+                         const starGeometry = new THREE.SphereGeometry(0.05 * starData.mass, 16, 16);
+                         let starColor = 0xffff00;
+                         if (starData.state === 'mainSequence') starColor = 0xffaa55;
+                         if (starData.state === 'supernova') starColor = 0xff0000;
+                         if (starData.state === 'dead') starColor = 0xaaaaaa;
+                         const starMaterial = new THREE.MeshBasicMaterial({ color: starColor });
+                         const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+
+                         starMesh.position.copy(starData.position);
+                         universe.threeMesh.add(starMesh);
+
+                         const newStar = new CelestialObject(starData.id, starData.type, starData.position, starMesh, starData.mass);
+                         newStar.name = starData.name;
+                         newStar.state = starData.state;
+                         newStar.age = starData.age;
+                         newStar.composition = starData.composition;
+                         universe.stars.push(newStar);
+                         addNameLabel(newStar, newStar.name);
+
+                         starData.planets.forEach(planetData => {
+                             const planetGeometry = new THREE.SphereGeometry(0.02 * planetData.mass * 10, 16, 16);
+                             const planetColor = planetData.hasLife ? 0x00ff00 : 0x55aaee;
+                             const planetMaterial = new THREE.MeshBasicMaterial({ color: planetColor });
+                             const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+                             planetMesh.position.copy(planetData.position);
+                             starMesh.add(planetMesh);
+
+                             const newPlanet = new Planet(planetData.id, planetData.position, planetMesh, planetData.mass);
+                             newPlanet.name = planetData.name;
+                             newPlanet.age = planetData.age;
+                             newPlanet.composition = planetData.composition;
+                             newPlanet.lifeForms = [];
+                             addNameLabel(newPlanet, newPlanet.name);
+
+                             planetData.lifeForms.forEach(lifeData => {
+                                 const newLife = new LifeForm(lifeData.id, lifeData.type, lifeData.location);
+                                 newLife.awareness = lifeData.awareness;
+                                 newLife.technologyLevel = lifeData.technologyLevel;
+                                 newPlanet.lifeForms.push(newLife);
+                             });
+
+                             if (planetData.technologyLevel > 0) {
+                                 newPlanet.technology = new Technology('tech-0', newPlanet.threeMesh);
+                                 newPlanet.technology.update(planetData.technologyLevel);
+                             }
+
+                             newStar.planets.push(newPlanet);
+                         });
+                    });
+                }
+            });
+            toggleNames(document.getElementById('show-names-toggle').checked);
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isPaused) {
+                simulationUpdate();
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Helper Functions ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function resetSimulation() {
+            console.log("Resetting simulation...");
+            if (universeGroup) {
+                universeGroup.children.forEach(child => {
+                    if (child.isMesh) {
+                        child.geometry.dispose();
+                        child.material.dispose();
+                    }
+                });
+                scene.remove(universeGroup);
+            }
+            
+            universes.forEach(universe => {
+                universe.stars.forEach(star => {
+                    if (star.nameLabel) {
+                        star.threeMesh.remove(star.nameLabel);
+                        star.nameLabel.material.map.dispose();
+                        star.nameLabel.material.dispose();
+                    }
+                    star.planets.forEach(planet => {
+                        if (planet.nameLabel) {
+                            planet.threeMesh.remove(planet.nameLabel);
+                            planet.nameLabel.material.map.dispose();
+                            planet.nameLabel.material.dispose();
+                        }
+                    });
+                });
+            });
+
+            universes = [];
+            isPaused = false;
+            selectedUniverse = null;
+            document.getElementById('pause-btn').textContent = 'Pause';
+            document.getElementById('universe-details').innerHTML = '';
+            
+            universeGroup = new THREE.Group();
+            scene.add(universeGroup);
+            generateSphereFlake(new THREE.Vector3(0, 0, 0), 1, depth);
+
+            timeline = new Timeline();
+            travelingObjects = [];
+            console.log("Simulation reset complete.");
+        }
+
+        // --- Start the application ---
+        init();
+    </script>
+</body>
+</html>

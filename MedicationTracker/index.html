@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Medication Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+    <!--https://content-security-policy.com/-->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self';
+          script-src 'self' 'unsafe-inline';
+          style-src 'self' 'unsafe-inline';
+          connect-src 'self';
+          img-src 'self';
+          form-action 'self';
+          manifest-src 'self' ;
+          worker-src 'self';" />
+    <!--https://www.w3schools.com/w3css/-->
+    <link href="assets/css/w3.css" rel="stylesheet" />
+    <link href="assets/css/app.css" rel="stylesheet" />
+    <link rel="manifest" href="manifest.json">
+</head>
+<body style="min-height:100vh">
+    <div class="w3-container w3-grey">
+        <h1>
+            <span title="open Sidebar" style="display: inline-block;" id="openNav" class="w3-button w3-transparent w3-xlarge" onclick="w3_open()">☰</span>
+            Medication Tracker
+        </h1>
+    </div>
+    <div class="w3-sidebar w3-light-grey w3-card-4 w3-animate-left" style="width: 200px; display: none;" id="mySidebar">
+        <div class="w3-bar w3-dark-grey">
+            <span class="w3-bar-item w3-padding-16">Options</span>
+            <button onclick="w3_close()" class="w3-bar-item w3-xlarge w3-button w3-right w3-padding-16" title="close Sidebar">×</button>
+        </div>
+        <div class="w3-bar-block">
+            <button class="w3-bar-item w3-button w3-grey" onclick="showHome();">Home</button>
+            <button class="w3-bar-item w3-button" onclick="showPeople();">People</button>
+            <button class="w3-bar-item w3-button" onclick="exportData();">Export</button>
+            <button class="w3-bar-item w3-button" onclick="showImport();">Import</button>
+        </div>
+    </div>
+
+    <div id="main" style="margin-left: 0px;">
+        <div class="w3-container">
+            <table id="" class="w3-table-all">
+                <tbody id="trackerTableBody">
+                    <tr class="sticky">
+                        <th><button id="AddRow" class="w3-button w3-ripple w3-grey" style="z-index:0">+</button></th>
+                        <th style="min-width: 200px;">Person</th>
+                        <th>Med. Name</th>
+                        <th>Dose</th>
+                        <th>Dr. Presc.</th>
+                        <th>Date Last Filled</th>
+                        <th># Pills in Bottle</th>
+                        <th>RX #</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="People" class="w3-modal" style="display: none;">
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <header class="w3-container w3-grey">
+                <span onclick="closePeople();" class="w3-button w3-xxlarge w3-grey w3-display-topright">×</span>
+                <h2 style="min-height:52px">
+                    People
+                    <button id="AddPersonRow" class="w3-button w3-ripple w3-grey " style="z-index:0;margin-left:15px;">+</button>
+                </h2>
+            </header>
+            <div class="w3-container">
+
+                <table class="w3-table-all" id="PeopleTable">
+                </table>
+            </div>
+            <br />
+            <footer class="w3-container w3-grey w3-display-container">
+                &nbsp;
+            </footer>
+        </div>
+    </div>
+
+    <div id="Export" class="w3-modal" style="display: none;">
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <header class="w3-container w3-grey">
+                <span onclick="closeExport();" class="w3-button w3-xxlarge w3-grey w3-display-topright">×</span>
+                <h2 style="min-height:52px">
+                    Export Data
+                </h2>
+            </header>
+            <div class="w3-container">
+                <button id="btnExport" class="w3-button">Export</button>
+            </div>
+            <br />
+            <footer class="w3-container w3-grey w3-display-container">
+                &nbsp;
+            </footer>
+        </div>
+    </div>
+
+    <div id="Import" class="w3-modal" style="display: none;">
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <header class="w3-container w3-grey">
+                <span onclick="closeImport();" class="w3-button w3-xxlarge w3-grey w3-display-topright">×</span>
+                <h2 style="min-height:52px">
+                    Import Data
+                </h2>
+            </header>
+            <div class="w3-container">
+                <br/>
+                <input id="importSource" accept=".json" type="file" />
+                
+            </div>
+            <br />
+            <footer class="w3-container w3-grey w3-display-container">
+                &nbsp;
+            </footer>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+
+</body>
+</html>

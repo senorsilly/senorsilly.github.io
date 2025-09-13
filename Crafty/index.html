@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Crafting Game</title>
+        <link href="assets/css/styles.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="splash-screen">
+        <h1>Loading Assets...</h1>
+        <div id="loading-progress">0%</div>
+    </div>
+
+    <div id="intro-screen">
+        <h1>Welcome, Crafter!</h1>
+        <p>The story begins...</p>
+        <button id="start-game-button">Start Game</button>
+    </div>
+
+    <div id="game-screen">
+        <canvas id="game-canvas"></canvas>
+        <button id="world-map-button">World Map</button>
+    </div>
+
+    <div id="world-map">
+        <h2>World Map</h2>
+        </div>
+
+    <div id="modal">
+        <div id="modal-content">
+            <button id="close-modal-button">Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="assets/js/game.js"></script>
+</body>
+</html>

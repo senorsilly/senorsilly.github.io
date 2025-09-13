@@ -1,0 +1,28 @@
+{
+  "short_name": "Invoice Builder",
+  "name": "Invoice Builder",
+  "icons": [
+    {
+      "src": "assets/img/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    },
+    {
+      "src": "assets/img/logo.svg",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/img/logo.svg",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "id": "",
+  "start_url": "https://senorsilly.github.io/InvoiceBuilder/index.html",
+  "background_color": "#9c27b0",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#3367D6",
+  "description": "Used to generate an invoice total from a list of services"
+}

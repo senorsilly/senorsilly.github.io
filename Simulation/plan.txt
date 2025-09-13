@@ -1,0 +1,70 @@
+1. The Sphere Flake and Universe Representation
+A sphere flake is a fractal structure. We can represent this recursively.
+
+Universe object: This will be the fundamental unit.
+
+id: A unique identifier (e.g., a path in the fractal tree).
+
+parent: A reference to the parent Universe.
+
+children: An array of child Universe objects.
+
+physicalConstants: An object containing values for constants like gravity, planckConstant, speedOfLight, etc.
+
+state: An object to hold the current state of the universe, including age and a timeline of events.
+
+stats: An object to hold high-level statistics like numberOfStars, numberOfBlackHoles, numberOfPlanets, numberOfLifeForms.
+
+hydrogenDensity: A function or value representing the rate of hydrogen density increase.
+
+spatialPosition: A 3D vector representing its relative position in the sphere flake.
+
+2. The Timeline
+This is crucial for the ability to rewind, fast-forward, and branch.
+
+Timeline object: A structure to hold historical states.
+
+events: An array of Event objects, where an Event has a timestamp and a type (e.g., starFormation, planetFormation, lifeEmergence).
+
+stateSnapshots: An array of snapshots of the Universe object at specific points in time. This is for rewinding to a specific point.
+
+currentTimestamp: The current time in the simulation.
+
+3. Celestial Objects (Stars, Planets, etc.)
+These can be represented as objects within the Universe.
+
+CelestialObject object: A base object for all celestial bodies.
+
+id: Unique ID.
+
+type: (e.g., 'star', 'planet', 'nebula').
+
+state: (e.g., 'forming', 'mainSequence', 'supernova').
+
+position: 3D vector.
+
+mass: A value.
+
+age: A value.
+
+composition: A statistical representation of elements.
+
+4. Life and Technology
+This will be a more complex object.
+
+LifeForm object:
+
+id: Unique ID.
+
+type: (e.g., 'microbial', 'plant', 'animal').
+
+location: Reference to the Planet object.
+
+timeline: A mini-timeline of the life form's evolution.
+
+awareness: A value representing self-awareness.
+
+technologyLevel: A value representing its technological advancement.
+
+Misc.
+Create a new type of celestial object: Maybe something like an asteroid field or a black hole that affects nearby objects.
