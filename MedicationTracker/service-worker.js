@@ -1,5 +1,5 @@
 ﻿// Choose a cache name
-const cacheName = 'cache-v1.1';
+const cacheName = 'cache-v1.2';
 // List the files to precache
 const precacheResources = ['/', 'index.html', 'manifest.json', 'assets/css/app.css', 'assets/css/w3.css', 'assets/js/app.js', 'assets/img/logo.svg', 'assets/img/logo.jpg'];
 

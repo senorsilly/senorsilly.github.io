@@ -31,6 +31,7 @@ function addRow(rowDetails) {
                             <td><input value="${rowDetails.dateLastFilled}" id="txtDateLastFilled" class="w3-input w3-border w3-animate-input" type="date" style="width:100%;" placeholder="Dr. Jan Itor"></td>
                             <td><input value="${rowDetails.numberPillsLeft}" id="txtNumberPillsLeft" value="0" class="w3-input w3-border w3-animate-input" min="0" max="999" step="1.0" type="number" style="width:100%;" placeholder=""></td>
                             <td><input value="${rowDetails.perscriptionNumber}" id="txtPerscriptionNumber" class="w3-input w3-border w3-animate-input" style="width:100%;" placeholder=""></td>
+                            <td><input value="${rowDetails.numberRefills}" id="txtNumberRefills" value="0" class="w3-input w3-border w3-animate-input" min="0" max="999" step="1.0" type="number" style="width:100%;" placeholder=""></td>
                         </tr>
                     </table>`  
     }else{
@@ -50,6 +51,7 @@ function addRow(rowDetails) {
                             <td><input id="txtDateLastFilled" class="w3-input w3-border w3-animate-input" type="date" style="width:100%;" placeholder="Dr. Jan Itor"></td>
                             <td><input id="txtNumberPillsLeft" value="0" class="w3-input w3-border w3-animate-input" min="0" max="999" step="1.0" type="number" style="width:100%;" placeholder=""></td>
                             <td><input id="txtPerscriptionNumber" class="w3-input w3-border w3-animate-input" style="width:100%;" placeholder=""></td>
+                            <td><input id="txtNumberRefills" value="0" class="w3-input w3-border w3-animate-input" min="0" max="999" step="1.0" type="number" style="width:100%;" placeholder=""></td>
                         </tr>
                     </table>`   
     }
@@ -88,10 +90,19 @@ function addRowHandlers(theRow) {
     theRow.querySelector("#txtMedicationName").addEventListener("keyup", function (e) {
         saveMedicationDetails();
     });
+    theRow.querySelector("#txtMedicationName").addEventListener("paste", function (e) {
+        saveMedicationDetails();
+    });
     theRow.querySelector("#txtDose").addEventListener("keyup", function (e) {
         saveMedicationDetails();
     });
+    theRow.querySelector("#txtDose").addEventListener("paste", function (e) {
+        saveMedicationDetails();
+    });
     theRow.querySelector("#txtPrescribingDoctor").addEventListener("keyup", function (e) {
+        saveMedicationDetails();
+    });
+    theRow.querySelector("#txtPrescribingDoctor").addEventListener("paste", function (e) {
         saveMedicationDetails();
     });
     theRow.querySelector("#txtDateLastFilled").addEventListener("change", function (e) {
@@ -101,6 +112,15 @@ function addRowHandlers(theRow) {
         saveMedicationDetails();
     });
     theRow.querySelector("#txtPerscriptionNumber").addEventListener("keyup", function (e) {
+        saveMedicationDetails();
+    });
+    theRow.querySelector("#txtPerscriptionNumber").addEventListener("paste", function (e) {
+        saveMedicationDetails();
+    });
+    theRow.querySelector("#txtNumberRefills").addEventListener("change", function (e) {
+        saveMedicationDetails();
+    });
+    theRow.querySelector("#txtNumberRefills").addEventListener("paste", function (e) {
         saveMedicationDetails();
     });
 }
@@ -114,7 +134,8 @@ function saveMedicationDetails(){
             prescribingDoctor:rowDetails.querySelector("#txtPrescribingDoctor").value,
             dateLastFilled:rowDetails.querySelector("#txtDateLastFilled").value,
             numberPillsLeft:rowDetails.querySelector("#txtNumberPillsLeft").value,
-            perscriptionNumber:rowDetails.querySelector("#txtPerscriptionNumber").value
+            perscriptionNumber:rowDetails.querySelector("#txtPerscriptionNumber").value,
+            numberRefills:rowDetails.querySelector("#txtNumberRefills").value
         });
     });
 
@@ -147,29 +168,76 @@ function init() {
         }
         closeImport();
     });
+    document.getElementById("importTextSource").addEventListener("change", function(e){
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileContent = e.target.result;
+                processTextContent(fileContent);
+            };
+            reader.readAsText(file);
+        }else{
+            console.log('No file?');
+        }
+        closeImport();
+    });
 
     //Service worker
     registerServiceWorker();
 }
 function processJsonContent(jsonString) {
-        try {
-            const data = JSON.parse(jsonString);
-            medicationList = data;
-            localStorage.setItem(medicationKey, JSON.stringify(medicationList));
-            loadMedications();
-        } catch (error) {
-            console.error('Error parsing JSON:', error);
-            alert('Invalid JSON file. Please upload a valid JSON file.');
-        }
+    try {
+        const data = JSON.parse(jsonString);
+        var importedData  = data;
+        medicationList = importedData.medicationDetails;
+        peopleList = importedData.peopleDetails;
+        localStorage.setItem(medicationKey, JSON.stringify(medicationList));
+        localStorage.setItem(peopleKey, JSON.stringify(peopleList));
+        rebindPeople();
+        loadMedications();
+    } catch (error) {
+        console.error('Error parsing JSON:', error);
+        alert('Invalid JSON file. Please upload a valid JSON file.');
     }
+}
+function processTextContent(textString){
+    try {
+        //The import text format is different that the export text format, maybe standardize later?
+        //Interate through each line
+         const lines = textString.split(/\r?\n/);
+        lines.forEach(function(line, index) {
+            const columns = line.split(',');
+            console.log(columns);
+            medicationList.push(
+                {medicationName:columns[0],
+                dose:columns[1],
+                prescribingDoctor:columns[3]
+            });
+        });
+
+        //Save the change and rebind
+        localStorage.setItem(medicationKey, JSON.stringify(medicationList));
+        loadMedications();
+    } catch (error) {
+        console.error('Error parsing text:', error);
+        alert('Invalid text file. Please upload a valid text file.');
+    }
+}
 function exportData(){
-    const jsonString = JSON.stringify(medicationList, null, 2); // Prettify JSON
-    const blob = new Blob([jsonString], { type: "application/json" });
+    var exportData = {peopleDetails: peopleList, medicationDetails: medicationList};
+    const jsonString = JSON.stringify(exportData, null, 2); // Prettify JSON
+
+    downloadFile(jsonString,'MedicationTrackerExport.json',"application/json");
+}
+
+function downloadFile(fileData, fileName, mimeType){
+    const blob = new Blob([fileData], { type: mimeType });
     const objectUrl = URL.createObjectURL(blob);
 
     const anchorEl = document.createElement("a");
     anchorEl.href = objectUrl;
-    anchorEl.download = 'MedicationList.json';
+    anchorEl.download = fileName;
 
     // Trigger the download
     anchorEl.click();
@@ -270,6 +338,7 @@ function closePeople() {
 function rebindPeople() {
     document.querySelectorAll("#cboPerson").forEach(function (e) {
         var theDropDown = e;
+        var currentValue = theDropDown.value;
         theDropDown.innerHTML = '';
         option = document.createElement("option");
         theDropDown.add(option);
@@ -279,6 +348,9 @@ function rebindPeople() {
             option.value = e.personName;
             theDropDown.add(option);
         });
+        if(currentValue){
+            theDropDown.value = currentValue;
+        }
     });
 }
 function showExport(){
@@ -295,6 +367,43 @@ function closeImport(){
     document.getElementById('Import').style.display = 'none';
     document.getElementById('mySidebar').style.display = 'none';
 }
+function showImportText(){
+    document.getElementById('ImportText').style.display = 'block'
+}
+function closeImportText(){
+    document.getElementById('ImportText').style.display = 'none';
+    document.getElementById('mySidebar').style.display = 'none';
+}
+function printToText(){
+    var textString = 'Person, Med. Name, Dose, Dr. Presc., Date Last Filled, # Pills in Bottle, RX #, # Refills \n';
+    medicationList.forEach(function(theDetails){
+        textString += `${theDetails.person}, ${theDetails.medicationName}, ${theDetails.dose}, ${theDetails.prescribingDoctor}, ${theDetails.dateLastFilled}, ${theDetails.numberPillsLeft}, ${theDetails.perscriptionNumber}, ${theDetails.numberRefills}`;
+        textString += '\n'
+    });
+
+    downloadFile(textString,'MedicationTracker.txt',"text");
+}
+function purgeCache(){
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          return caches.delete(cacheName);
+        })
+      );
+    });
+    window.location.reload();
+}
+
+function clearData(){
+    if(confirm('Are you sure?')){
+        medicationList = [];
+        peopleList = [];
+        localStorage.setItem(medicationKey, JSON.stringify(medicationList));
+        localStorage.setItem(peopleKey, JSON.stringify(peopleList));
+        window.location.reload();
+    }
+}
+
 function registerServiceWorker() {
     // Register the service worker
     if ('serviceWorker' in navigator) {

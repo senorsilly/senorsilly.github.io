@@ -34,8 +34,12 @@
         <div class="w3-bar-block">
             <button class="w3-bar-item w3-button w3-grey" onclick="showHome();">Home</button>
             <button class="w3-bar-item w3-button" onclick="showPeople();">People</button>
-            <button class="w3-bar-item w3-button" onclick="exportData();">Export</button>
-            <button class="w3-bar-item w3-button" onclick="showImport();">Import</button>
+            <button class="w3-bar-item w3-button" onclick="exportData();">Export JSON</button>
+            <button class="w3-bar-item w3-button" onclick="showImport();">Import JSON</button>
+            <button class="w3-bar-item w3-button" onclick="showImportText();">Import Text</button>
+            <button class="w3-bar-item w3-button" onclick="printToText();">Print to Text</button>
+            <button class="w3-bar-item w3-button" onclick="purgeCache();">Purge Cached Files</button>
+            <button class="w3-bar-item w3-button" onclick="clearData();">Clear Data</button>
         </div>
     </div>
 
@@ -52,6 +56,7 @@
                         <th>Date Last Filled</th>
                         <th># Pills in Bottle</th>
                         <th>RX #</th>
+                        <th># Refills</th>
                     </tr>
                 </tbody>
             </table>
@@ -102,12 +107,42 @@
             <header class="w3-container w3-grey">
                 <span onclick="closeImport();" class="w3-button w3-xxlarge w3-grey w3-display-topright">×</span>
                 <h2 style="min-height:52px">
-                    Import Data
+                    Import JSON Data
                 </h2>
             </header>
             <div class="w3-container">
                 <br/>
                 <input id="importSource" accept=".json" type="file" />
+                
+            </div>
+            <br />
+            <footer class="w3-container w3-grey w3-display-container">
+                &nbsp;
+            </footer>
+        </div>
+    </div>
+
+    <div id="ImportText" class="w3-modal" style="display: none;">
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <header class="w3-container w3-grey">
+                <span onclick="closeImportText();" class="w3-button w3-xxlarge w3-grey w3-display-topright">×</span>
+                <h2 style="min-height:52px">
+                    Import Text Data
+                </h2>
+            </header>
+            <div class="w3-container">
+                <h3>Text Data Format</h3>
+                <table style="width:100%">
+                    <tr>
+                        <th>Medication</th>
+                        <th>Dose</th>
+                        <th>Frequency</th>
+                        <th>Used For</th>
+                        <th>Prescribing Doctor</th>
+                    </tr>
+                </table>
+                <br/>
+                <input id="importTextSource" accept=".txt" type="file" />
                 
             </div>
             <br />
