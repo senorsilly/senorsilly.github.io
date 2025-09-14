@@ -1,0 +1,446 @@
+#splashScreen img {
+    max-width: 90%; /* Or any percentage you find suitable */
+    max-height: 80%; /* Adjust as needed to fit within the screen */
+    width: auto; /* Allows the width to scale proportionally */
+    height: auto; /* Allows the height to scale proportionally */
+    object-fit: contain; /* Ensures the entire image is visible within its container */
+    z-index: 1; /* Ensure image is below */
+}
+#splashScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black; /* Or any color/image you prefer */
+    color:white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's on top of everything */
+}
+#startGameButton {
+    padding: 10px 20px;
+    font-size: 1.2em;
+    cursor: pointer;
+    margin-top: 20px;
+}
+#loadingText {
+    z-index: 2; /* Ensure text is on top */
+}
+#loadingIndicator {
+    margin-top: 20px;
+    font-size: 1.2em;
+    z-index: 2; /* Ensure text is on top */
+}
+
+#progressBarContainer {
+    width: 80%;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 5px;
+    margin-top: 10px;
+    z-index: 2; /* Ensure text is on top */
+}
+
+#progressBar {
+    width: 0%;
+    height: 100%;
+    background-color: #007bff; /* Example progress color */
+    border-radius: 5px;
+}
+
+#gameContainer {
+    display: flex; /* Use flexbox for layout */
+}
+
+#gameCanvas {
+    border: 1px solid black;
+}
+
+#statusPanel {
+    border: 1px solid gray;
+    padding: 10px;
+    width: 300px; /* Adjust width as needed */
+    margin-left: 10px; /* Add some spacing */
+    font-family: monospace;
+    color:white
+}
+
+    #statusPanel h2 {
+        margin-top: 0;
+    }
+
+.statusItem {
+    margin-bottom: 5px;
+}
+
+.modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: black;
+    color:white;
+    padding: 5px;
+    border: 1px solid #888;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+
+.close-button{
+    float:right;
+    cursor:pointer;
+}
+#damageMessages, #inventoryMessages {
+    position: absolute;
+    pointer-events: none;
+}
+
+body {
+    background-color: black;
+}
+.modal-content {
+    background-color: black;
+    margin: 2% auto; /* 15% from the top and centered */
+    min-width:150px;
+    position: relative; /* Needed for absolute positioning of close button */
+}
+#inventoryItems{
+    clear:both;
+    padding-top:10px;
+}
+.modalHeading {
+    float: left;
+    font-size: 24px; /* Adjust size as needed */
+    font-weight: bold;
+    color: #333; /* Dark gray color */
+    margin-bottom: 15px; /* Add some space below the heading */
+    border-bottom: 1px solid #ddd; /* Add a subtle bottom border */
+    padding-bottom: 10px; /* Add padding below the text */
+}
+#inventoryModal .close {
+    cursor: pointer;
+    background-color: #ddd;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+    float: right; /* Pull to the right */
+    margin-top: -10px; /* Adjust top margin if needed */
+    margin-right: -5px; /* Adjust right margin if needed */
+}
+
+    #inventoryModal .close:hover {
+        background-color: #bbb; /* Darker gray on hover */
+    }
+.useButton{
+    margin-left:10px;
+}
+#itemContainer {
+    max-width: 100%; /* Ensure it doesn't exceed its parent's width */
+    overflow-y: auto; /* Enable vertical scrolling when content overflows vertically */
+    white-space: nowrap; /* Prevent content from wrapping to the next line */
+}
+
+    #itemContainer button {
+        margin-bottom: 5px;
+        padding: 2px 2px;
+        float: right;
+        margin-right:5px;
+    }
+    #itemContainer label {
+        float: left;
+    }
+
+.scrollingContainer {
+    overflow-y:auto;
+}
+
+.equipped-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+    .equipped-item:last-child {
+        border-bottom: none;
+    }
+
+.unequip-button {
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: #ddd;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+    .unequip-button:hover {
+        background-color: #ccc;
+    }
+
+/* Add basic styling for the crafting modal */
+#craftingRecipesList {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
+.crafting-recipe {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+    .crafting-recipe:last-child {
+        border-bottom: none;
+    }
+
+    .crafting-recipe.selected {
+        background-color: #ddd;
+        color:black;
+    }
+.crafting-icon{
+
+}
+
+#requirementsList {
+    list-style-type: none;
+    padding: 0;
+}
+
+    #requirementsList li {
+        margin-bottom: 3px;
+    }
+
+#craftButton:disabled {
+    background-color: #eee;
+    color: #888;
+    cursor: not-allowed;
+}
+
+#craftingMessage {
+    margin-top: 10px;
+    font-style: italic;
+}
+#requirementsList li.missing-requirement {
+    color: red; /* Example: make the text red */
+    font-weight: bold; /* Example: make the text bold */
+}
+/* Add styling for category buttons */
+#craftingCategories {
+    margin-bottom: 10px;
+}
+
+.category-button {
+    padding: 8px 15px;
+    margin-right: 5px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+    .category-button.active {
+        background-color: #ddd;
+    }
+
+    .category-button:hover {
+        background-color: #eee;
+    }
+
+/* Add basic styling for the audio settings modal */
+.setting-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+    .setting-row label {
+        width: 120px;
+        margin-right: 10px;
+    }
+
+    .setting-row input[type="range"] {
+        flex-grow: 1;
+    }
+
+    .setting-row span {
+        width: 40px;
+        text-align: right;
+        margin-left: 10px;
+    }
+
+#spellList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.spell-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+    .spell-option img {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 5px;
+    }
+
+    .spell-option.selected {
+        background-color: gray; /* Example selected style */
+        border-color: #4dd0e1;
+    }
+
+/* Basic styling for the credits modal */
+#creditsList {
+    margin-top: 15px;
+    white-space: pre-line; /* Preserve line breaks in credit text */
+    height:400px;
+    overflow-y:auto;
+}
+
+.credit-section {
+    margin-bottom: 10px;
+}
+
+    .credit-section h3 {
+        margin-top: 0;
+        margin-bottom: 5px;
+    }
+#debugExploredMapModal{
+    max-height:300px;
+    overflow:auto;
+}
+#exploredMapText {
+    white-space: pre-wrap; /* Preserve formatting and allow wrapping */
+    font-family: monospace; /* Fixed-width font for alignment */
+    font-size: 0.8em;
+    line-height: 1em;
+    background-color: white;
+    color:black;
+}
+/*Portraits*/
+#portraitContainer {
+    float: left; /* Adjust as needed for layout */
+    margin-right: 10px; /* Space between portrait and text */
+    width: 80px; /* Adjust size as needed */
+    height: 80px; /* Adjust size as needed */
+    overflow: hidden; /* Clip if image is larger */
+}
+
+#npcPortrait {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Maintain aspect ratio, crop if necessary */
+}
+
+/* Adjust modal-content for better layout with portrait */
+#dialogueModal .modal-content {
+    padding: 5px;
+    /* Adjust padding or layout properties */
+    display: flex; /* Example: Use flexbox for layout */
+    flex-direction: row; /* Portrait and text side-by-side */
+    align-items: flex-start; /* Align items to the top */
+}
+
+    #dialogueModal .modal-content > div:not(#portraitContainer) {
+        flex-grow: 1; /* Allow text and choices to take remaining space */
+    }
+
+#dialogueChoices button {
+    margin: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    display: block; /* Display choices on separate lines */
+    width: 100%; /* Make buttons full width of the text area */
+    text-align: left; /* Align text within buttons */
+}
+/*achievements*/
+#achievementsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Adjust as needed */
+    gap: 10px;
+    margin-top: 15px;
+    max-height:200px;
+    overflow-y:auto;
+}
+
+.achievement-item {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.achievement-image {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 5px;
+}
+
+.achievement-unlocked {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+.achievement-locked {
+    filter: grayscale(100%); /* Example: Dim locked achievements */
+    opacity: 0.7;
+}
+
+#notificationContainer {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.achievement-notification {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.notification-image {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+.achievement-notification h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.achievement-notification p {
+    margin-bottom: 0;
+    font-size: 0.9em;
+}
+.saved-game-slot{
+    cursor:pointer;
+}
+#saveGameDetails{
+    max-height:100px;
+    overflow-y:auto;
+}

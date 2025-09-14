@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Windy Canvas</title>
+    <link href="assets/css/style.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/ico/favicon_32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/ico/favicon_16.png">
+</head>
+<body>
+
+    <div id="splashScreen">
+        <img src="assets/img/splash.jpg" alt="Windy Canvas Splash Screen" />
+        <button id="startGameButton">Click to Start</button>
+        <div id="loadingText">Loading... 0%</div>
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+        </div>
+    </div>
+    <div id="intro-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: black; color: white; text-align: center; z-index: 1000;">
+        <img id="intro-image" src="" style="max-width: 80%; max-height: 70%; margin-top: 20px;">
+        <div id="intro-text" style="position: absolute; bottom: 20px; left: 5%; width: 90%; background-color: rgba(0, 0, 0, 0.7); padding: 15px; font-size: 1.2em;"></div>
+        <button id="next-intro-button" style="position: absolute; bottom: 80px; right: 5%; padding: 10px 20px; font-size: 1em; cursor: pointer;">Next</button>
+        <button id="skip-intro-button" style="position: absolute; top: 20px; right: 20px; padding: 10px 15px; font-size: 0.9em; cursor: pointer;">Skip Intro</button>
+    </div>
+    <div id="main-menu" class="menu-screen modal">
+        <h1>Windy Canvas</h1>
+        <button id="new-game-button">New Game</button>
+        <button id="save-game-button">Save Game</button>
+        <button id="load-game-button">Load Game</button>
+    </div>
+    <div id="load-game-screen" class="menu-screen modal" style="display: none;">
+        <h2>Load Game</h2>
+        <div id="saved-games-list">
+        </div>
+        <button id="back-to-main-from-load">Back</button>
+    </div>
+    <div id="GameElements" style="display:none">
+        <div id="damageMessages"></div>
+        <div id="inventoryMessages"></div>
+
+        <div id="audioSettingsModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeAudioSettingsModal">&times;</span>
+                <h2>Audio Settings</h2>
+
+                <div class="setting-row">
+                    <label for="musicVolumeSlider">Music Volume:</label>
+                    <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.5">
+                    <span id="musicVolumeDisplay">50%</span>
+                </div>
+
+                <div class="setting-row">
+                    <label for="effectsVolumeSlider">Effects Volume:</label>
+                    <input type="range" id="effectsVolumeSlider" min="0" max="1" step="0.01" value="1">
+                    <span id="effectsVolumeDisplay">100%</span>
+                </div>
+            </div>
+        </div>
+        <div id="spellSelectionModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeSpellSelectionModal">&times;</span>
+                <h2>Select Active Spell</h2>
+                <div style="max-height:200px;overflow-y:auto;" id="spellList">
+                </div>
+            </div>
+        </div>
+        <div id="equipmentModal" class="modal">
+            <div class="modal-content">
+                <h2 style="float:left">Equipped Items</h2>
+                <span class="close-button">&times;</span>
+                <div style="clear:both" id="equippedItemList">
+                </div>
+            </div>
+        </div>
+
+        <div id="craftingModal" class="modal">
+            <div class="modal-content">
+                <h2 style="float:left">Crafting</h2>
+                <span class="close-button">&times;</span>
+                <div style="clear:both" id="craftingCategories">
+                    <button class="category-button active" data-category="all">All</button>
+                    <button class="category-button" data-category="Crafted Material">Crafted Material</button>
+                    <button class="category-button" data-category="Building">Building</button>
+                    <button class="category-button" data-category="Smelting">Smelting</button>
+                    <button class="category-button" data-category="Weapons">Weapons</button>
+                    <button class="category-button" data-category="Armor">Armor</button>
+                    <button class="category-button" data-category="Potions">Potions</button>
+                </div>
+                <div id="craftingRecipesList">
+                </div>
+                <button style="display:none;" id="backToRecipesButton">Back to Recipes</button>
+                <div id="outputDetails"></div>
+                <div id="craftingRequirements">
+                    <h3>Requirements</h3>
+                    <ul id="requirementsList">
+                    </ul>
+                    <button id="craftButton" disabled>Craft</button>
+                    <div id="craftingMessage"></div>
+                </div>
+            </div>
+        </div>
+        <div id="creditsModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeCreditsModal">&times;</span>
+                <h2>Credits</h2>
+                <div id="creditsList">
+                </div>
+            </div>
+        </div>
+        <div id="exploredMapModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeExploredMapModal">&times;</span>
+                <h2 id="exploredMapHeading">Explored Map</h2>
+                <pre id="exploredMapText"></pre>
+            </div>
+        </div>
+        <div id="debugModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeDebugModal">&times;</span>
+                <h2>Debug</h2>
+
+                <label>Current Location</label>
+                <div id="debugCurrentPlayerLocation"></div>
+                <br />
+                <label>Previous Location</label>
+                <div id="debugPreviousPlayerLocation"></div>
+                <br />
+                <input style="width:3em" id="txtX" type="number" /><input style="width:3em" id="txtY" type="number" />
+                <button id="debugSetLocation">Set Location</button>
+                <br />
+                <br />
+                Save game details:<br />
+                <div id="saveGameDetails"></div>
+                <button id="debugRenderFrame">Render Frame</button>
+                <button id="debugGiveResources">Give Resources</button>
+            </div>
+        </div>
+        <div id="dialogueModal" class="modal">
+            <span class="close-button" id="closeDialogue">&times;</span>
+            <h2 id="npcName"></h2>
+            <div class="modal-content">
+
+                <div id="portraitContainer">
+                    <img id="npcPortrait" src="" alt="NPC Portrait">
+                </div>
+
+                <p id="dialogueText"></p>
+                <div id="dialogueChoices">
+                </div>
+
+            </div>
+        </div>
+        <div id="achievementsModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" id="closeAchievementsModal">&times;</span>
+                <h2>Achievements</h2>
+                <div id="achievementsList">
+                </div>
+            </div>
+        </div>
+        <div id="craftingModalOverlay" class="modal-overlay"></div>
+        <div id="equipmentModalOverlay" class="modal-overlay"></div>
+        <div id="infoOverlay" style="position: absolute; bottom: 0; left: 0; width: 75.5%; background-color: rgba(0, 0, 0, 0.7); color: white; padding: 10px; text-align: center;">
+            <span id="infoDetails">
+                Level: <span id="currentLevelDisplay">1</span>
+            </span>
+            <button id="openEquipmentButton">Equipped Items</button>
+            <button id="openCraftingButton">Crafting</button>
+            <button id="openSpellSelection">Spells</button>
+            <button id="restButton">Rest</button>
+            <button id="openAudioSettings">Audio</button>
+            <button id="openCredits">Credits</button>
+            <button id="openExploredMap">Map</button>
+            <button id="openAchievements">Achievements</button>
+            <button id="openDebug">Debug</button>
+            <button id="openMenu">Menu</button>
+        </div>
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div id="statusPanel">
+                <div id="sectionSizer">
+                    <h2>Player Status</h2>
+                    <div class="statusItem" id="hpDisplay">HP: 10/10</div>
+                    <div class="statusItem" id="manaDisplay">MP: 10/10</div>
+                    <div class="statusItem" id="attackDisplay">Attack: 5</div>
+                    <div class="statusItem" id="defenseDisplay">Defense: 2</div>
+                    <div class="statusItem" id="levelDisplay">Level: 1</div>
+
+                    <h2>Equipped Items</h2>
+                    <div class="statusItem" id="equippedWeapon">Weapon: None</div>
+                    <div class="statusItem" id="equippedArmor">Armor: None</div>
+                </div>
+                <h2>Inventory</h2>
+                <div class="scrollingContainer" id="itemScroller">
+                    <div id="itemContainer">
+                        <div id="inventoryItems">None</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/main.js" type="module"></script>
+</body>
+</html>
